@@ -1,6 +1,6 @@
 """
     oauth_app : An extendable REST API authorization connector for OAuth2 providers
-     oauth_utils : OAuth2 utility library that encapsulates the 3-legged OAuth2 workflow
+     oauth2_utils : OAuth2 utility library that encapsulates the 3-legged OAuth2 workflow
      and implements OAuth2 provider factory for client applications
 
     Copyright (C) Gyorgy Demarcsek, 2016
