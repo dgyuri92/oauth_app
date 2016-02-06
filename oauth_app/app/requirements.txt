@@ -1,0 +1,6 @@
+flask
+rauth
+sqlalchemy
+Flask-SQLAlchemy
+pycrypto
+Flask-KVSession

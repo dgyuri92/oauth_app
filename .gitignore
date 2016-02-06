@@ -1,0 +1,5 @@
+flask_session
+*.pyc
+__pycache__
+*.crt
+*.key
