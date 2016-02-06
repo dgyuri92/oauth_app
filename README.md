@@ -1,4 +1,15 @@
+Project
+========
+This is a university assignment. The goal is to demonstrate secure usage of the OAuth2 protocol for API call authorization and simple SSO between two or more web services. The library components were designed to be re-usable and extendable. For demonstration, GitLab and a simple Python+Flask web service is used in 3-legged OAuth workflow where GitLab is used as AS. 
 
+Usage
+======
+TODO (configuration, etc.(
+
+
+Status
+=======
+Experimental, beta, development, etc. :)
 
 External docs
 =============
@@ -13,3 +24,4 @@ External docs
  * http://doc.gitlab.com/ce/integration/oauth_provider.html
  * https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2
  * http://oauthbible.com/
+ * ...
