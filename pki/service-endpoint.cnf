@@ -1,0 +1,49 @@
+HOME            = .
+RANDFILE        = $ENV::HOME/.rnd
+
+####################################################################
+[ req ]
+default_bits        = 2048
+default_keyfile     = serverkey.pem
+distinguished_name  = server_distinguished_name
+req_extensions      = server_req_extensions
+string_mask         = utf8only
+
+####################################################################
+[ server_distinguished_name ]
+countryName               = HU
+countryName_default       = HU
+
+stateOrProvinceName           = HU
+stateOrProvinceName_default   = HU
+
+localityName            = Budapest
+localityName_default    = Budapest
+
+rganizationName           = Docker Test Containers - Service Certificate
+organizationName_default  = Docker Test Containers - Service Certificate
+
+commonName          = docker_service
+commonName_default  = docker_service
+
+emailAddress            = example@example.com
+emailAddress_default    = example@example.com
+
+####################################################################
+[ server_req_extensions ]
+
+subjectKeyIdentifier        = hash
+basicConstraints        = CA:FALSE
+keyUsage            = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName          = @alternate_names
+nsComment           = "OpenSSL Generated Certificate - NOT FOR PRODUCTION USE"
+
+####################################################################
+[ alternate_names ]
+
+DNS.1             = gitlab
+DNS.2             = oauthapp
+DNS.3             = oauth_app
+DNS.4             = gitlab_oauth_app
+DNS.5             = oauth_gitlab_app
+DNS.6             = oauth_gitlab
