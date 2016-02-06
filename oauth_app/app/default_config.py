@@ -1,10 +1,10 @@
-SQLALCHEMY_DATABASE_URI = 'sqlite:///oauth_app_data.db'
+SQLALCHEMY_DATABASE_URI = 'sqlite:///www-data/oauth_app_data.db'
 SECRET_KEY = '\xfb\x12\xdf\xa1@idgyjr92\xd6>V\xc0msc\xbb\x8fp\x16#Z\x0b\x81\xeb\x16\xab$_\x11bmevik'
 
 OAUTH_PROVIDERS={
     "gitlab": {
-        "OAUTH_CLIENT_ID": '06f264f0937bb230b40539a3bb7cc9cb5c839d7f6ff8d161688bd14b1baaaa62',
-        "OAUTH_CLIENT_SECRET": '215a1adbdef787b3abbbbdf4c5566db750086bb442f32223c5d43c0963bec51b',
+        "OAUTH_CLIENT_ID": '183957292f7b0d66565d619180d2e415b78e637e9ceed65c3d4e59a7896b057f',
+        "OAUTH_CLIENT_SECRET": '37c00831494c6ec77ac077cc05fae4eec0a8a417456ef55a10a41dda0d8eb867',
         "SERVICE_BASE_URL": 'https://gitlab',
         "ACCESS_SCOPE": "api",
         "IDENTITY_RESOURCE": "api/v3/user",

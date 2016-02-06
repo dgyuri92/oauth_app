@@ -124,6 +124,7 @@ def auth_error(e):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        db.session.commit()
     if app.config['DEBUG']:
         from werkzeug.debug import DebuggedApplication
         app.wsgi_app = DebuggedApplication(app.wsgi_app, True)

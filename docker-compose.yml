@@ -1,12 +1,12 @@
 ---
-common:
-  image: busybox
-  volumes:
-    - /usr/local/share/ca-certificates/
+#pki:
+#  build: .
+#  dockerfile: pki.dockerfile
+#  container_name: certificate_store
 
 gitlab:
   hostname: gitlab
-  container_name: gitlab
+  container_name: oauth_gitlab
   build: ./gitlab
   expose:
     - "80"
@@ -15,30 +15,30 @@ gitlab:
     - "80:80"
     - "443:443"
   environment:
-    VIRTUAL_HOST: gitlab
     GITLAB_OMNIBUS_CONFIG: "external_url 'https://gitlab:443/'"
-  volumes_from:
-    - common
+  #volumes_from:
+  #  - pki
   # default credentials:  root:5iveL!fe
 
 oauthapp:
   hostname: oauthapp
-  container_name: oauth_gitlab_app
+  container_name: oauth_oauthapp
   build: ./oauth_app
   expose:
     - "80"
     - "8080"
   links:
-    - "gitlab"
+    - gitlab
   ports:
     - "8080:443"
   environment:
-    OAUTHLIB_INSECURE_TRANSPORT: 1          # ONLY FOR DEVELOPMENT
-    UWSGI_EXTRA_PARAMS: "--py-autoreload 1" # ONLY FOR DEVELOPMENT
+    REQUESTS_CA_BUNDLE: /etc/ssl/certs/
+    UWSGI_EXTRA_PARAMS: "--py-autoreload 1 --catch-exceptions" # ONLY FOR DEVELOPMENT
+
   restart: always
   # OS X + VirtualBox + Docker nightmares...
   volumes:
     - /Users:/Users
-  volumes_from:
-    - common
-  working_dir: "/Users/gyorgydemarcsek/oauth2_gitlab_demo/oauth-gitlab-app/app"
+  #volumes_from:
+  #  - pki
+  working_dir: "/Users/gyorgydemarcsek/oauth2_gitlab_demo/oauth_app/app"

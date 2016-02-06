@@ -12,7 +12,7 @@ from threading import Lock
 from abc import ABCMeta, abstractmethod
 
 from rauth.service import OAuth2Service
-from model import User
+from model import User, db
 
 class oauth2_auth_error(Exception):
     """
@@ -89,14 +89,14 @@ class oauth2_service(OAuth2Service):
     def scope(self):
         return self._config['access_scope']
 
-    __default_identity_decoder__ = lambda response: resposne.json()
+    __default_identity_decoder__ = lambda response: response.json()
     __default_identity_query_method__ = "get"
     def get_identity(self, oauth_session, decoder=None):
         if decoder is None:
             decoder = oauth2_service.__default_identity_decoder__
-        method = getattr(oauth2_service, __default_identity_query_method__)
+        method = getattr(oauth_session, oauth2_service.__default_identity_query_method__)
         me = decoder(method(self._config['IDENTITY_RESOURCE']))
-        return User.get_or_create(me[self._config['IDENTITY_USER_NAME_FIELD']], me[oauth.cfg['IDENTITY_USER_ID_FIELD']])
+        return User.get_or_create(me[self._config['IDENTITY_USER_NAME_FIELD']], me[self._config['IDENTITY_USER_ID_FIELD']])
 
 
 class oauth2_service_factory:
