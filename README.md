@@ -17,7 +17,7 @@ To build the images and start the Docker containers, you can run:
 $ docker-compose up
 ```
 
-Then use your browser to access your web services inside the containers. By default, the GitLab instance will listen on port 443, the OAuth2 client will listen on port 8080, both with HTTPS of course. If you are using `docker-machine` and ran `dns_setup.sh` then you can just use `https://gitlab/` and `https://oauthapp:8080/` to get started. You will need to register the application at GitLab and update the OAuth2 client credentials in the configuration.
+Then use your browser to access your web services inside the containers. By default, the GitLab instance will listen on port 443, the OAuth2 client will listen on port 8080, both with HTTPS of course. If you ran `dns_setup.sh` then you can just use `https://gitlab/` and `https://oauthapp:8080/` to get started from your host machine. You will need to register the application at GitLab and update the OAuth2 client credentials in the configuration.
 
 Usage
 ======
