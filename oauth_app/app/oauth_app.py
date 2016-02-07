@@ -35,8 +35,15 @@ except FileExistsError:
     pass
 
 # Using signed cookies here on the client side (itsdangerous)
-KVSessionExtension(FilesystemStore(app.config['DEFAULT_SESSION_DIRECTORY']), app)
+session_manager = KVSessionExtension(FilesystemStore(app.config['DEFAULT_SESSION_DIRECTORY']), app)
 
+# Create database and make sure to clean up expired sessions
+with app.app_context():
+    db.create_all()
+    try:
+        session_manager.cleanup_sessions()
+    except:
+        pass
 
 class oauth2_authorized_flask(oauth2_authorized):
     """
@@ -82,7 +89,7 @@ def login(oauth_service):
                            oauth_service=oauth_service,
                            _external=True)
     params = {'redirect_uri': redirect_uri, 'scope': oauth.scope, 'response_type': 'code'}
-    # Redirect to request authorization code from provider
+    # Send client to request authorization code from provider
     return redirect(oauth.get_authorize_url(**params))
 
 
@@ -131,6 +138,7 @@ def logout(oauth_service):
 @app.route('/logout')
 def logout_from_all():
     session.clear()
+    session.destroy()
     response = app.make_response(json.dumps({"logged_out": True}))
     response.delete_cookie(app.session_cookie_name)
     return response
@@ -139,10 +147,6 @@ def logout_from_all():
 @app.errorhandler(oauth2_auth_error)
 def auth_error_handler(error):
     return json.dumps({"oauth2_auth_error": repr(error)}), 403
-
-
-with app.app_context():
-    db.create_all()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=app.config['DEBUG'])

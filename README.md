@@ -11,8 +11,6 @@ $ pushd pki && make gitlab.pki oauth_app.pki && popd
 ```
 Now you have the certificates, time to build the Docker images.
 
-Before moving on, you might want to edit `docker-compose.yml` and change the attributes `working_dir` and `volumes` according to your configuration. The purpose of this setup was to enable "live" development of the code - it is only a convenience feature that will make your changes to the source immediately effective, without having to run `docker-compose build` again and again....
-
 To build the images and start the Docker containers, you can run:
 
 ```bash
@@ -75,4 +73,4 @@ External docs
  * http://doc.gitlab.com/ce/integration/oauth_provider.html
  * https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2
  * http://oauthbible.com/
- * ...
+ * http://www.cloudidentity.com/blog/2013/01/02/oauth-2-0-and-sign-in-4/

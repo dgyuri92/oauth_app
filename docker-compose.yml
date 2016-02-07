@@ -27,10 +27,5 @@ oauthapp:
   environment:
     REQUESTS_CA_BUNDLE: /etc/ssl/certs/
     UWSGI_EXTRA_PARAMS: "--py-autoreload 1 --catch-exceptions" # ONLY FOR DEVELOPMENT
-
-  # OS X + VirtualBox + Docker nightmares...
   volumes:
-    - /Users:/Users
-  #volumes_from:
-  #  - pki
-  working_dir: "/Users/gyorgydemarcsek/oauth2_gitlab_demo/oauth_app/app"
+    - ./oauth_app/app:/usr/src/app
