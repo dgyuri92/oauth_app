@@ -1,6 +1,30 @@
 Project
 ========
-This is a university assignment. The goal is to demonstrate secure usage of the OAuth2 protocol for API call authorization and simple SSO between two or more web services. The library components were designed to be re-usable and extendable. For demonstration, GitLab and a simple Python+Flask web service is used in 3-legged OAuth workflow where GitLab is used as AS and IP.
+This is a university assignment in IT security domain. The goal is to demonstrate secure usage of the OAuth2 protocol for API call authorization and simple SSO between two or more web services. The library components were designed to be re-usable and extendable. For demonstration, GitLab and a simple Python+Flask web service is used in 3-legged OAuth workflow where GitLab is used as AS and IP.
+
+Getting started
+================
+The easiest way to get started with a development configuration is to use Docker. First you need to generate the SSL certificates and build the docker images.
+
+```bash
+$ pushd pki && make gitlab.pki oauth_app.pki && popd
+```
+Now you have the certificates, time to build the Docker images. If you are using `docker-machine`, you first want to run:
+
+```bash
+$ docker-machine start default
+$ ./dns_setup.sh
+$ eval `docker-machine env default`
+```
+_First you might want to edit `docker-compose.yml` and change the attributes `working_dir` and `volumes` according to your configuration. The purpose of this setup was to enable "live" development of the code - it is only a convenience feature that will make your changes to the source immediately effective, without having to run `docker-compose build` again and again...._
+
+To start the Docker containers, you can run:
+
+```bash
+$ docker-compose up
+```
+
+Then use your browser to access your web services inside the containers. The GitLab instance will listen on port 443, the OAuth2 client will listen on port 8080, both with HTTPS of course. If you are using `docker-machine` and ran `dns_setup.sh` then you can just use `https://gitlab/` and `https://oauthapp:8080/` to get started. You will need to register the application at GitLab and update the OAuth2 client credentials in the configuration.
 
 Usage
 ======
@@ -28,6 +52,19 @@ OAUTH_PROVIDERS={
 }
 ```
 
+This configuration will result in the following endpoints:
+
+```
+List providers: https://oauthapp:8080/
+Login via GitLab: https://oauthapp:8080/gitlab/login
+Redirect (callback) URI for the client: https://oauthapp:8080/gitlab/authorize_callback
+Drop current GitLab access token:
+https://oauthapp:8080/gitlab/logout
+Access GitLab REST resource:
+https://oauthapp:8080/gitlab/resource/...
+Drop all access tokens
+https://oauthapp:8080/logout
+```
 
 Status
 =======
