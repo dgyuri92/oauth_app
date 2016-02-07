@@ -9,22 +9,17 @@ The easiest way to get started with a development configuration is to use Docker
 ```bash
 $ pushd pki && make gitlab.pki oauth_app.pki && popd
 ```
-Now you have the certificates, time to build the Docker images. If you are using `docker-machine`, you first want to run:
+Now you have the certificates, time to build the Docker images.
 
-```bash
-$ docker-machine start default
-$ ./dns_setup.sh
-$ eval `docker-machine env default`
-```
-_First you might want to edit `docker-compose.yml` and change the attributes `working_dir` and `volumes` according to your configuration. The purpose of this setup was to enable "live" development of the code - it is only a convenience feature that will make your changes to the source immediately effective, without having to run `docker-compose build` again and again...._
+Before moving on, you might want to edit `docker-compose.yml` and change the attributes `working_dir` and `volumes` according to your configuration. The purpose of this setup was to enable "live" development of the code - it is only a convenience feature that will make your changes to the source immediately effective, without having to run `docker-compose build` again and again....
 
-To start the Docker containers, you can run:
+To build the images and start the Docker containers, you can run:
 
 ```bash
 $ docker-compose up
 ```
 
-Then use your browser to access your web services inside the containers. The GitLab instance will listen on port 443, the OAuth2 client will listen on port 8080, both with HTTPS of course. If you are using `docker-machine` and ran `dns_setup.sh` then you can just use `https://gitlab/` and `https://oauthapp:8080/` to get started. You will need to register the application at GitLab and update the OAuth2 client credentials in the configuration.
+Then use your browser to access your web services inside the containers. By default, the GitLab instance will listen on port 443, the OAuth2 client will listen on port 8080, both with HTTPS of course. If you are using `docker-machine` and ran `dns_setup.sh` then you can just use `https://gitlab/` and `https://oauthapp:8080/` to get started. You will need to register the application at GitLab and update the OAuth2 client credentials in the configuration.
 
 Usage
 ======

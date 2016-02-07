@@ -14,7 +14,7 @@ index.txt:
 	touch index.txt
 
 serial.txt:
-	echo "01" > serial.txt
+	echo "$$RANDOM" > serial.txt
 
 
 servercert.pem: index.txt serial.txt
