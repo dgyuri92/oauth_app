@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Update your /etc/hosts file for easy access to containers
+
 eval `docker-machine env default`
 docker_machine_ip=`docker-machine ip default`
 
