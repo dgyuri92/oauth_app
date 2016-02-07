@@ -54,17 +54,14 @@ OAUTH_PROVIDERS={
 
 This configuration will result in the following endpoints:
 
-```
-List providers: https://oauthapp:8080/
-Login via GitLab: https://oauthapp:8080/gitlab/login
-Redirect (callback) URI for the client: https://oauthapp:8080/gitlab/authorize_callback
-Drop current GitLab access token:
-https://oauthapp:8080/gitlab/logout
-Access GitLab REST resource:
-https://oauthapp:8080/gitlab/resource/...
-Drop all access tokens
-https://oauthapp:8080/logout
-```
+
+* List providers: https://oauthapp:8080/
+* Login via GitLab: https://oauthapp:8080/gitlab/login
+* Redirect (callback) URI for the client: https://oauthapp:8080/gitlab/authorize_callback
+* Drop current GitLab access token: https://oauthapp:8080/gitlab/logout
+* Access GitLab REST resource: https://oauthapp:8080/gitlab/resource/...
+* Drop all access tokens (and delete session cookie): https://oauthapp:8080/logout
+
 
 Status
 =======
