@@ -2,8 +2,20 @@
 
 # Update your /etc/hosts file for easy access to containers
 
-eval `docker-machine env default`
-docker_machine_ip=`docker-machine ip default`
+machine="$1"
+
+if [[ -z $machine ]]; then
+  machine="default"
+fi
+
+docker_machine_ip="127.0.0.1"
+
+docker_machine_command=$(which docker-machine)
+if [[ $? -eq 0 ]]; then
+  echo "Using docker-machine..."
+  eval `$docker_machine_command env $machine`
+  docker_machine_ip=`docker-machine ip $machine`
+fi
 
 echo "Docker machine: $docker_machine_ip"
 
