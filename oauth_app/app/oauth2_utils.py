@@ -14,56 +14,89 @@ from abc import ABCMeta, abstractmethod
 from rauth.service import OAuth2Service
 from model import User, db
 
+
 class oauth2_auth_error(Exception):
     """
     Indicates OAuth2 authorization failure (expired access token, authorization code replay, etc.)
     """
     pass
 
+
 class oauth2_authorized:
     """
     Simple generic wrapper that performs 3-legged OAuth2 authorization via the specified
-    service provider.
+    service provider. When managed to obtain an access token, an oauth_session will be passed to the
+    wrapped function. This is an abstract class, the client must implement the following methods:
+
+     - get_redirect_url : Must return the desired redirection URI passed to the OAuth2 service provider
+     - get_request_params : Must return a dict of the current HTTP request patameters
+     - handle_unauthorized : This method is called when the client application must be authorized (must obtain auth. code)
+     - get_token : Returns a saved access token that can be reused
+     - save_token : Saves a new access token
     """
 
     __metaclass__ = ABCMeta
 
     def __init__(self, service,
-                    grant_type='authorization_code', # ONLY!
-                    code_param_name='code',
-                    response_decoder=None):
+                 grant_type='authorization_code',  # ONLY!
+                 code_param_name='code',
+                 response_decoder=None):
 
         self._oauth_service = service
         self._grant_type, self._code_param_name = grant_type, code_param_name
         self._decoder = response_decoder if response_decoder else lambda bson: json.loads(bson.decode('utf-8'))
 
     @abstractmethod
-    def get_redirect_url(self): pass
+    def get_redirect_url(self):
+        pass
 
     @abstractmethod
-    def get_request_params(self): pass
+    def get_token(self):
+        pass
 
     @abstractmethod
-    def handle_unatuhorized(self): pass
+    def get_request_params(self):
+        pass
+
+    @abstractmethod
+    def handle_unauthorized(self):
+        pass
+
+    @abstractmethod
+    def save_token(self, token):
+        pass
 
     def __call__(self, funct):
         @wraps(funct)
         def wrapped_funct(*args, **kwargs):
-            if not self._code_param_name in self.get_request_params():
-                return self.handle_unatuhorized()
-
+            access_token = self.get_token()
+            oauth_session = None
             redirect_uri = self.get_redirect_url()
-            request_object = dict(code=self.get_request_params()[self._code_param_name],
-                                redirect_uri=redirect_uri,
-                                grant_type=self._grant_type)
 
-            try:
-                kwargs["oauth_session"] = self._oauth_service.get_auth_session(
-                    data=request_object,
-                    decoder=self._decoder
-                )
-            except:
-                raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+            if not access_token:
+                if self._code_param_name not in self.get_request_params():
+                    return self.handle_unatuhorized()
+
+                request_object = dict(code=self.get_request_params()[self._code_param_name],
+                                      redirect_uri=redirect_uri,
+                                      grant_type=self._grant_type)
+
+                try:
+                    oauth_session = self._oauth_service.get_auth_session(
+                        data=request_object,
+                        decoder=self._decoder
+                    )
+                except:
+                    raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+
+                self.save_token(oauth_session.access_token)
+            else:
+                try:
+                    oauth_session = self._oauth_service.get_session(access_token)
+                except:
+                    raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+
+            kwargs["oauth_session"] = oauth_session
 
             return funct(*args, **kwargs)
 
@@ -73,7 +106,7 @@ class oauth2_authorized:
 class oauth2_service(OAuth2Service):
     class case_insensitive_dict(dict):
         def __init__(self, orig_dict):
-            super().__init__({k.lower():v for k,v in orig_dict.items()})
+            super().__init__({k.lower(): v for k, v in orig_dict.items()})
 
         def __setitem__(self, key, value):
             super().__setitem__(key.lower(), value)
@@ -91,16 +124,20 @@ class oauth2_service(OAuth2Service):
 
     __default_identity_decoder__ = lambda response: response.json()
     __default_identity_query_method__ = "get"
+
     def get_identity(self, oauth_session, decoder=None):
         if decoder is None:
             decoder = oauth2_service.__default_identity_decoder__
         method = getattr(oauth_session, oauth2_service.__default_identity_query_method__)
         me = decoder(method(self._config['IDENTITY_RESOURCE']))
-        return User.get_or_create(me[self._config['IDENTITY_USER_NAME_FIELD']], me[self._config['IDENTITY_USER_ID_FIELD']])
+        user_obj = User.get_or_create(me[self._config['IDENTITY_USER_NAME_FIELD']],
+                                      me[self._config['IDENTITY_USER_ID_FIELD']])
+        return user_obj, me
 
 
 class oauth2_service_factory:
     mutex = Lock()
+
     def __init__(self, config={}):
         self._providers = {}
         self._config = config
