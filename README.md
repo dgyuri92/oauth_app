@@ -56,9 +56,16 @@ This configuration will result in the following endpoints:
 * Drop all access tokens (and delete session cookie): https://oauthapp:8080/logout
 
 
+
 Status
 =======
 Experimental, beta, development, etc. :)
+
+Notes: 
+ * Only 3-legged workflow is supported
+ * Tested only with authorization code grant type
+ * OAuth 1.0 is not supported
+
 
 External docs
 =============
