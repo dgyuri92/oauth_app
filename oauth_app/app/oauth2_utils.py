@@ -23,18 +23,42 @@ class oauth2_auth_error(Exception):
 
 
 class oauth2_authorized:
-    """
-    Simple generic wrapper that performs 3-legged OAuth2 authorization via the specified
-    service provider. When managed to obtain an access token, an oauth_session will be passed to the
-    wrapped function. This is an abstract class, the client must implement the following methods:
+    __metaclass__ = ABCMeta
 
-     - get_redirect_url : Must return the desired redirection URI passed to the OAuth2 service provider
-     - get_request_params : Must return a dict of the current HTTP request patameters
-     - handle_unauthorized : This method is called when the client application must be authorized (must obtain auth. code)
-     - get_token : Returns a saved access token that can be reused
-     - save_token : Saves a new access token
-    """
+    def __init__(self, service,
+                 response_decoder=None):
 
+        self._oauth_service = service
+        self._decoder = response_decoder if response_decoder else lambda bson: json.loads(bson.decode('utf-8'))
+
+    @abstractmethod
+    def get_token(self):
+        pass
+
+    def __call__(self, funct):
+        @wraps(funct)
+        def wrapped_funct(*args, **kwargs):
+            try:
+                access_token = self.get_token()
+            except:
+                raise oauth2_auth_error("Failed to load access token")
+
+            oauth_session = None
+
+            try:
+                oauth_session = self._oauth_service.get_session(access_token)
+            except:
+                raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+
+            kwargs["oauth_session"] = oauth_session
+
+            with oauth_session:
+                return funct(*args, **kwargs)
+
+        return wrapped_funct
+
+
+class oauth2_token_getter:
     __metaclass__ = ABCMeta
 
     def __init__(self, service,
@@ -47,58 +71,43 @@ class oauth2_authorized:
         self._decoder = response_decoder if response_decoder else lambda bson: json.loads(bson.decode('utf-8'))
 
     @abstractmethod
-    def get_redirect_url(self):
+    def get_request_params():
         pass
 
     @abstractmethod
-    def get_token(self):
+    def get_redirect_url():
         pass
 
     @abstractmethod
-    def get_request_params(self):
-        pass
-
-    @abstractmethod
-    def handle_unauthorized(self):
-        pass
-
-    @abstractmethod
-    def save_token(self, token):
+    def save_token():
         pass
 
     def __call__(self, funct):
         @wraps(funct)
         def wrapped_funct(*args, **kwargs):
-            access_token = self.get_token()
-            oauth_session = None
             redirect_uri = self.get_redirect_url()
 
-            if not access_token:
-                if self._code_param_name not in self.get_request_params():
-                    return self.handle_unatuhorized()
+            if self._code_param_name not in self.get_request_params():
+                raise oauth2_auth_error("Authorization code required")
 
-                request_object = dict(code=self.get_request_params()[self._code_param_name],
-                                      redirect_uri=redirect_uri,
-                                      grant_type=self._grant_type)
+            request_object = dict(code=self.get_request_params()[self._code_param_name],
+                                 redirect_uri=redirect_uri,
+                                 grant_type=self._grant_type)
 
-                try:
-                    oauth_session = self._oauth_service.get_auth_session(
-                        data=request_object,
-                        decoder=self._decoder
-                    )
-                except:
-                    raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+            oauth_session = None
+            try:
+                oauth_session = self._oauth_service.get_auth_session(
+                    data=request_object,
+                    decoder=self._decoder)
 
-                self.save_token(oauth_session.access_token)
-            else:
-                try:
-                    oauth_session = self._oauth_service.get_session(access_token)
-                except:
-                    raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+            except:
+                raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
 
             kwargs["oauth_session"] = oauth_session
+            self.save_token(oauth_session.access_token)
 
-            return funct(*args, **kwargs)
+            with oauth_session:
+                return funct(*args, **kwargs)
 
         return wrapped_funct
 

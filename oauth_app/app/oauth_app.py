@@ -10,7 +10,7 @@ import json
 import os
 
 from flask import Flask, flash, request, redirect, render_template, url_for, session, sessions
-from oauth2_utils import oauth2_authorized, oauth2_auth_error, oauth2_service_factory
+from oauth2_utils import oauth2_authorized, oauth2_token_getter, oauth2_auth_error, oauth2_service_factory
 from contextlib import contextmanager
 from aes_crypto import AESCipher
 from flask_kvsession import KVSessionExtension
@@ -46,10 +46,19 @@ with app.app_context():
         pass
 
 class oauth2_authorized_flask(oauth2_authorized):
-    """
-    A Flask-compatible implementation of the oauth_authorized decorator where
-    access tokens are stored encrypted in session data
-    """
+    def __init__(self, oauth_service, **kwargs):
+        global request
+        super().__init__(oauth_service, **kwargs)
+        self._request = request
+
+    def get_token(self):
+        encrypted_token = session[self._oauth_service.name]["oauth_session_token"]
+        access_token = AESCipher(app.config['SECRET_KEY']).decrypt(encrypted_token)
+
+        return access_token
+        
+
+class oauth2_token_getter_flask(oauth2_token_getter):
     def __init__(self, oauth_service, **kwargs):
         global request
         super().__init__(oauth_service, **kwargs)
@@ -61,20 +70,9 @@ class oauth2_authorized_flask(oauth2_authorized):
     def get_request_params(self):
         return self._request.args
 
-    def get_token(self):
-        try:
-            encrypted_token = session[self._oauth_service.name]["oauth_session_token"]
-            access_token = AESCipher(app.config['SECRET_KEY']).decrypt(encrypted_token)
-            return access_token
-        except KeyError:
-            return False
-
     def save_token(self, token):
         session[self._oauth_service.name] = {}
         session[self._oauth_service.name]["oauth_session_token"] = AESCipher(app.config['SECRET_KEY']).encrypt(token)
-
-    def handle_unatuhorized(self):
-        return redirect(url_for('login', oauth_service=self._oauth_service.name))
 
 
 @app.route('/')
@@ -98,7 +96,7 @@ def authorize_callback(oauth_service):
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
 
     # Get access token from provider
-    @oauth2_authorized_flask(oauth)
+    @oauth2_token_getter_flask(oauth)
     def _internal(oauth, oauth_session=None):
         user, profile = oauth.get_identity(oauth_session)
         return json.dumps({"authorized": True, "name": user.username,
