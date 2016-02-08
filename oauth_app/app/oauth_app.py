@@ -25,7 +25,7 @@ app.config.from_object(default_config)
 app.config.from_pyfile("app.cfg", silent=True)
 
 # Database setup
-from model import db
+from model import db, CsrfToken
 db.init_app(app)
 
 # Session setup
@@ -45,6 +45,7 @@ with app.app_context():
     except:
         pass
 
+
 class oauth2_authorized_flask(oauth2_authorized):
     def __init__(self, oauth_service, **kwargs):
         global request
@@ -56,7 +57,7 @@ class oauth2_authorized_flask(oauth2_authorized):
         access_token = AESCipher(app.config['SECRET_KEY']).decrypt(encrypted_token)
 
         return access_token
-        
+
 
 class oauth2_token_getter_flask(oauth2_token_getter):
     def __init__(self, oauth_service, **kwargs):
@@ -82,18 +83,31 @@ def index():
 
 @app.route('/<oauth_service>/login')
 def login(oauth_service):
+    global csrf_tokens
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
     redirect_uri = url_for('authorize_callback',
                            oauth_service=oauth_service,
                            _external=True)
-    params = {'redirect_uri': redirect_uri, 'scope': oauth.scope, 'response_type': 'code'}
+
+    new_csrf_token = CsrfToken.create(oauth.generate_csrf_token())
+
+    params = {'redirect_uri': redirect_uri,
+              'scope': oauth.scope,
+              'response_type': 'code',
+              'state': new_csrf_token}
     # Send client to request authorization code from provider
     return redirect(oauth.get_authorize_url(**params))
 
 
 @app.route('/<oauth_service>/authorize_callback')
 def authorize_callback(oauth_service):
+    global csrf_tokens
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    token = CsrfToken.get(request.args["state"])
+    if token is None:
+        return json.dumps({"error": "Invalid CSRF token"}, 403)
+
+    CsrfToken.destroy(token)
 
     # Get access token from provider
     @oauth2_token_getter_flask(oauth)
@@ -114,7 +128,10 @@ def resource(oauth_service, resource_path):
     def _internal(oauth, resource_path=None, oauth_session=None):
         # Use the access token to access resource from remote service
         method = getattr(oauth_session, request.method.lower())
-        result = method(resource_path).json()
+        try:
+            result = method(resource_path).json()
+        except ValueError:
+            return json.dumps({"error": "No JSON object received"})
         return json.dumps({"resource": resource_path, "data": result})
 
     return _internal(oauth, resource_path=resource_path)

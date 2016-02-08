@@ -6,7 +6,11 @@
     Copyright (C) Gyorgy Demarcsek, 2016
 """
 
+import hmac
+import hashlib
 import json
+import time
+import base64
 from functools import wraps
 from threading import Lock
 from abc import ABCMeta, abstractmethod
@@ -126,6 +130,15 @@ class oauth2_service(OAuth2Service):
     def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._config = oauth2_service.case_insensitive_dict(cfg)
+
+    def generate_csrf_token(self):
+        """
+        Utility method for generating CSRF tokens. The token is just returned,
+        not persisted by this method.
+        """
+        raw = str(time.time()) + self.client_id
+        hashed = hmac.new(bytes(self.client_secret, 'utf-8'), bytes(raw, 'utf-8'), hashlib.sha1)
+        return str(base64.b64encode(hashed.digest()), 'ascii')
 
     @property
     def scope(self):
