@@ -34,6 +34,7 @@ class User(db.Model):
             db.session.commit()
         return user
 
+
 class CsrfToken(db.Model):
     TTL_MAX = 1000
     token = db.Column(db.String(512), primary_key=True)

@@ -11,6 +11,7 @@ import hashlib
 import json
 import time
 import base64
+
 from functools import wraps
 from threading import Lock
 from abc import ABCMeta, abstractmethod
@@ -19,14 +20,14 @@ from rauth.service import OAuth2Service
 from application.model import User, db
 
 
-class oauth2_auth_error(Exception):
+class OAuth2AuthError(Exception):
     """
     Indicates OAuth2 authorization failure (expired access token, authorization code replay, etc.)
     """
     pass
 
 
-class oauth2_authorized:
+class OAuth2Authorized:
     """
     Decorator for authorized API endpoints
     """
@@ -51,7 +52,7 @@ class oauth2_authorized:
             try:
                 access_token = self.get_token()
             except:
-                raise oauth2_auth_error("Failed to load access token")
+                raise OAuth2AuthError("Failed to load access token")
 
             oauth_session = None
 
@@ -59,7 +60,7 @@ class oauth2_authorized:
                 # Use existing access token to create authorized session
                 oauth_session = self._oauth_service.get_session(access_token)
             except:
-                raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+                raise OAuth2AuthError(self._decoder(self._oauth_service.access_token_response.content))
 
             kwargs["oauth_session"] = oauth_session
 
@@ -69,7 +70,7 @@ class oauth2_authorized:
         return wrapped_funct
 
 
-class oauth2_token_getter:
+class OAuth2TokenGetter:
     """
     Decorator for authorization callback endpoints
     """
@@ -112,7 +113,7 @@ class oauth2_token_getter:
             redirect_uri = self.get_redirect_url()
             # First check if we have
             if self._code_param_name not in self.get_request_params():
-                raise oauth2_auth_error("Authorization code required")
+                raise OAuth2AuthError("Authorization code required")
 
             request_object = dict(code=self.get_request_params()[self._code_param_name],
                                  redirect_uri=redirect_uri,
@@ -125,7 +126,7 @@ class oauth2_token_getter:
                     decoder=self._decoder)
 
             except:
-                raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
+                raise OAuth2AuthError(self._decoder(self._oauth_service.access_token_response.content))
 
             kwargs["oauth_session"] = oauth_session
             self.save_token(oauth_session.access_token)
@@ -138,13 +139,13 @@ class oauth2_token_getter:
 # TODO: Map each config key to property of oauth2_service - code will be
 # shorter and simpler
 
-class oauth2_service(OAuth2Service):
+class OAuth2Service(OAuth2Service):
     """
     Trivial extension of OAuth2Service that stores additional config.
     information. It can also use that information to generate CSRF tokens
     and retrieve user profile data
     """
-    class case_insensitive_dict(dict):
+    class CaseInsensitiveDict(dict):
         def __init__(self, orig_dict):
             super().__init__({k.lower(): v for k, v in orig_dict.items()})
 
@@ -156,7 +157,7 @@ class oauth2_service(OAuth2Service):
 
     def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._config = oauth2_service.case_insensitive_dict(cfg)
+        self._config = OAuth2Service.CaseInsensitiveDict(cfg)
 
     def generate_csrf_token(self):
         """
@@ -176,15 +177,15 @@ class oauth2_service(OAuth2Service):
 
     def get_identity(self, oauth_session, decoder=None):
         if decoder is None:
-            decoder = oauth2_service.__default_identity_decoder__
-        method = getattr(oauth_session, oauth2_service.__default_identity_query_method__)
+            decoder = OAuth2Service.__default_identity_decoder__
+        method = getattr(oauth_session, OAuth2Service.__default_identity_query_method__)
         me = decoder(method(self._config['IDENTITY_RESOURCE']))
         user_obj = User.get_or_create(me[self._config['IDENTITY_USER_NAME_FIELD']],
                                       me[self._config['IDENTITY_USER_ID_FIELD']])
         return user_obj, me
 
 
-class oauth2_service_factory:
+class OAuth2ServiceFactory:
     """
     Simple factory class for oauth2_service objects
     """
@@ -199,7 +200,7 @@ class oauth2_service_factory:
             return self._providers[provider_name]
         except KeyError:
             cfg = self._config[provider_name]
-            new_provider = self._providers[provider_name] = oauth2_service(
+            new_provider = self._providers[provider_name] = OAuth2Service(
                 cfg,
                 name=provider_name,
                 authorize_url="".join([cfg['SERVICE_BASE_URL'], '/oauth/authorize']),
@@ -214,7 +215,7 @@ class oauth2_service_factory:
 
     @staticmethod
     def get_oauth(cfg, name):
-        with oauth2_service_factory.mutex:
-            if oauth2_service_factory._instance is None:
-                oauth2_service_factory._instance = oauth2_service_factory(cfg)
-            return oauth2_service_factory._instance._get(name)
+        with OAuth2ServiceFactory.mutex:
+            if OAuth2ServiceFactory._instance is None:
+                OAuth2ServiceFactory._instance = OAuth2ServiceFactory(cfg)
+            return OAuth2ServiceFactory._instance._get(name)

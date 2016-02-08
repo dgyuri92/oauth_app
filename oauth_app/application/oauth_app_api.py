@@ -5,12 +5,12 @@
 
     Copyright (C) Gyorgy Demarcsek, 2016
 """
-from flask import request, redirect, render_template, url_for, session, sessions
+from flask import request, redirect, url_for, session
 import json
 
-from . import app, db, CsrfToken
-from .oauth2_utils import oauth2_auth_error, oauth2_service_factory
-from .oauth2_flask_utils import oauth2_authorized_flask, oauth2_token_getter_flask
+from . import app, CsrfToken
+from .oauth2_utils import OAuth2AuthError, OAuth2ServiceFactory
+from .oauth2_flask_utils import OAuth2AuthorizedFlask, Oauth2TokenGetterFlask
 
 @app.route('/')
 def index():
@@ -25,7 +25,7 @@ def login(oauth_service):
     """
     Login via provider :oauth_service by requesting authorization code.
     """
-    oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    oauth = OAuth2ServiceFactory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
     # This is where to pass us the auth. code
     redirect_uri = url_for('authorize_callback',
                            oauth_service=oauth_service,
@@ -48,7 +48,7 @@ def authorize_callback(oauth_service):
     """
     Authorization callback handler - must be called by the external service
     """
-    oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    oauth = OAuth2ServiceFactory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
     # Validate the CSRF token & remove it from the database if it was successful
     token = CsrfToken.get(request.args["state"])
     if token is None:
@@ -57,7 +57,7 @@ def authorize_callback(oauth_service):
     CsrfToken.destroy(token)
 
     # Get access token from provider
-    @oauth2_token_getter_flask(oauth)
+    @Oauth2TokenGetterFlask(oauth)
     def _internal(oauth, oauth_session=None):
         # Retrieve user profile
         user, profile = oauth.get_identity(oauth_session)
@@ -74,9 +74,9 @@ def resource(oauth_service, resource_path):
     Access resource on remote service at <base_url>/<resource_path> using
     the access token (proxy request)
     """
-    oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    oauth = OAuth2ServiceFactory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
 
-    @oauth2_authorized_flask(oauth)
+    @OAuth2AuthorizedFlask(oauth)
     def _internal(oauth, resource_path=None, oauth_session=None):
         # Use the access token to access resource from remote service
         # Proxy the method and the rest of the path
@@ -95,9 +95,9 @@ def logout(oauth_service):
     """
     Drop access token for service :oauth_service
     """
-    oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    oauth = OAuth2ServiceFactory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
 
-    @oauth2_authorized_flask(oauth)
+    @OAuth2AuthorizedFlask(oauth)
     def _internal(oauth, oauth_session=None):
         # Make sure to close the session
         oauth_session.close()
@@ -121,6 +121,6 @@ def logout_from_all():
     return response
 
 
-@app.errorhandler(oauth2_auth_error)
+@app.errorhandler(OAuth2AuthError)
 def auth_error_handler(error):
     return json.dumps({"oauth2_auth_error": repr(error)}), 403

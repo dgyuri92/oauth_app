@@ -8,10 +8,10 @@
 from flask import request, url_for, session
 
 from . import app
-from .oauth2_utils import oauth2_authorized, oauth2_token_getter
+from .oauth2_utils import OAuth2Authorized, OAuth2TokenGetter
 from .aes_crypto import AESCipher
 
-class oauth2_authorized_flask(oauth2_authorized):
+class OAuth2AuthorizedFlask(OAuth2Authorized):
     """
     A Flask-compatible implementation of oauth2_authorized where access tokens
     are persisted in sesssion data encrypted with AES
@@ -28,7 +28,7 @@ class oauth2_authorized_flask(oauth2_authorized):
         return access_token
 
 
-class oauth2_token_getter_flask(oauth2_token_getter):
+class Oauth2TokenGetterFlask(OAuth2TokenGetter):
     """
     A Flask-compatible implementation of oauth2_token_getter where access tokens
     are persisted in sesssion data encrypted with AES

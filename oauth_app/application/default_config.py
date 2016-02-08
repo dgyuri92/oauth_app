@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 SQLALCHEMY_DATABASE_URI = 'sqlite:////www-data/oauth_app_data.db'
 
 # This must be kept secret
@@ -17,7 +19,6 @@ OAUTH_PROVIDERS = {
 
 DEBUG = True # For development only
 
-from datetime import timedelta
 SESSION_COOKIE_SECURE = DEBUG
 SESSION_TYPE = "filesystem"
 # We must expire sessions
