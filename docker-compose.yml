@@ -29,3 +29,4 @@ oauthapp:
     UWSGI_EXTRA_PARAMS: "--py-autoreload 1 --catch-exceptions" # ONLY FOR DEVELOPMENT
   volumes:
     - ./oauth_app/app:/usr/src/app
+  restart: always
