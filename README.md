@@ -61,11 +61,11 @@ Status
 =======
 Experimental, beta, development, etc. :)
 
-Notes: 
+Notes:
  * Only 3-legged workflow is supported
  * Tested only with authorization code grant type
  * OAuth 1.0 is not supported
-
+ * For now, the service provider is expected to return JSON but this can be easily changed / extended
 
 External docs
 =============
@@ -81,3 +81,5 @@ External docs
  * https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2
  * http://oauthbible.com/
  * http://www.cloudidentity.com/blog/2013/01/02/oauth-2-0-and-sign-in-4/
+ * http://spring.io/blog/2011/11/30/cross-site-request-forgery-and-oauth2
+ * http://www.twobotechnologies.com/blog/2014/02/importance-of-state-in-oauth2.html
