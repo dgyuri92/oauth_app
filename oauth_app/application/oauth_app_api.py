@@ -5,90 +5,34 @@
 
     Copyright (C) Gyorgy Demarcsek, 2016
 """
-
+from flask import request, redirect, render_template, url_for, session, sessions
 import json
-import os
 
-from flask import Flask, flash, request, redirect, render_template, url_for, session, sessions
-from oauth2_utils import oauth2_authorized, oauth2_token_getter, oauth2_auth_error, oauth2_service_factory
-from contextlib import contextmanager
-from aes_crypto import AESCipher
-from flask_kvsession import KVSessionExtension
-from simplekv.fs import FilesystemStore
-
-# Flask setup
-app = Flask(__name__)
-import default_config
-
-# Load custom configuration
-app.config.from_object(default_config)
-app.config.from_pyfile("app.cfg", silent=True)
-
-# Database setup
-from model import db, CsrfToken
-db.init_app(app)
-
-# Session setup
-try:
-    os.makedirs(app.config['DEFAULT_SESSION_DIRECTORY'])
-except FileExistsError:
-    pass
-
-# Using signed cookies here on the client side (itsdangerous)
-session_manager = KVSessionExtension(FilesystemStore(app.config['DEFAULT_SESSION_DIRECTORY']), app)
-
-# Create database and make sure to clean up expired sessions
-with app.app_context():
-    db.create_all()
-    try:
-        session_manager.cleanup_sessions()
-    except:
-        pass
-
-
-class oauth2_authorized_flask(oauth2_authorized):
-    def __init__(self, oauth_service, **kwargs):
-        global request
-        super().__init__(oauth_service, **kwargs)
-        self._request = request
-
-    def get_token(self):
-        encrypted_token = session[self._oauth_service.name]["oauth_session_token"]
-        access_token = AESCipher(app.config['SECRET_KEY']).decrypt(encrypted_token)
-
-        return access_token
-
-
-class oauth2_token_getter_flask(oauth2_token_getter):
-    def __init__(self, oauth_service, **kwargs):
-        global request
-        super().__init__(oauth_service, **kwargs)
-        self._request = request
-
-    def get_redirect_url(self):
-        return url_for('authorize_callback', oauth_service=self._oauth_service.name, _external=True)
-
-    def get_request_params(self):
-        return self._request.args
-
-    def save_token(self, token):
-        session[self._oauth_service.name] = {}
-        session[self._oauth_service.name]["oauth_session_token"] = AESCipher(app.config['SECRET_KEY']).encrypt(token)
-
+from . import app, db, CsrfToken
+from .oauth2_utils import oauth2_auth_error, oauth2_service_factory
+from .oauth2_flask_utils import oauth2_authorized_flask, oauth2_token_getter_flask
 
 @app.route('/')
 def index():
+    """
+    List available providers
+    """
     return json.dumps({"status": "ready", "providers": list(app.config['OAUTH_PROVIDERS'])})
 
 
 @app.route('/<oauth_service>/login')
 def login(oauth_service):
-    global csrf_tokens
+    """
+    Login via provider :oauth_service by requesting authorization code.
+    """
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    # This is where to pass us the auth. code
     redirect_uri = url_for('authorize_callback',
                            oauth_service=oauth_service,
                            _external=True)
 
+    # We generate a secure CSRF token that we expect to get back from the
+    # provier in authorize_callback
     new_csrf_token = CsrfToken.create(oauth.generate_csrf_token())
 
     params = {'redirect_uri': redirect_uri,
@@ -101,8 +45,11 @@ def login(oauth_service):
 
 @app.route('/<oauth_service>/authorize_callback')
 def authorize_callback(oauth_service):
-    global csrf_tokens
+    """
+    Authorization callback handler - must be called by the external service
+    """
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
+    # Validate the CSRF token & remove it from the database if it was successful
     token = CsrfToken.get(request.args["state"])
     if token is None:
         return json.dumps({"error": "Invalid CSRF token"}, 403)
@@ -112,6 +59,7 @@ def authorize_callback(oauth_service):
     # Get access token from provider
     @oauth2_token_getter_flask(oauth)
     def _internal(oauth, oauth_session=None):
+        # Retrieve user profile
         user, profile = oauth.get_identity(oauth_session)
         return json.dumps({"authorized": True, "name": user.username,
                            "external_uid": user.service_uid,
@@ -122,11 +70,16 @@ def authorize_callback(oauth_service):
 
 @app.route('/<oauth_service>/resource/<path:resource_path>')
 def resource(oauth_service, resource_path):
+    """
+    Access resource on remote service at <base_url>/<resource_path> using
+    the access token (proxy request)
+    """
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
 
     @oauth2_authorized_flask(oauth)
     def _internal(oauth, resource_path=None, oauth_session=None):
         # Use the access token to access resource from remote service
+        # Proxy the method and the rest of the path
         method = getattr(oauth_session, request.method.lower())
         try:
             result = method(resource_path).json()
@@ -139,11 +92,16 @@ def resource(oauth_service, resource_path):
 
 @app.route('/<oauth_service>/logout')
 def logout(oauth_service):
+    """
+    Drop access token for service :oauth_service
+    """
     oauth = oauth2_service_factory.get_oauth(app.config['OAUTH_PROVIDERS'], oauth_service)
 
     @oauth2_authorized_flask(oauth)
     def _internal(oauth, oauth_session=None):
+        # Make sure to close the session
         oauth_session.close()
+        # Empty session data
         session[oauth.name] = {}
         return json.dumps({"logged_out": True})
 
@@ -152,6 +110,10 @@ def logout(oauth_service):
 
 @app.route('/logout')
 def logout_from_all():
+    """
+    Log out from all services
+    """
+    # Delete all session data and the session cookie
     session.clear()
     session.destroy()
     response = app.make_response(json.dumps({"logged_out": True}))
@@ -162,6 +124,3 @@ def logout_from_all():
 @app.errorhandler(oauth2_auth_error)
 def auth_error_handler(error):
     return json.dumps({"oauth2_auth_error": repr(error)}), 403
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=app.config['DEBUG'])

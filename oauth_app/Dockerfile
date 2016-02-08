@@ -1,17 +1,19 @@
 FROM python:3.3
 MAINTAINER Gyorgy Demarcsek
 
-# Add application root
-ADD /app /usr/src/app
-
 # Install package dependencies
 RUN apt-get update
 RUN apt-get install -y nano tar curl net-tools build-essential git nginx-full
 RUN pip install --upgrade pip
 
+# Add application root
+ADD /application /usr/src/application
+ADD /server.py /usr/src
+ADD /requirements.txt /usr/src
+
 # Install Python dependencies
-WORKDIR /usr/src/app
-RUN pip install --default-timeout=200 -r requirements.txt
+WORKDIR /usr/src
+RUN pip install --default-timeout=200 -r ./requirements.txt
 RUN pip install uwsgi
 
 # Install default certificates

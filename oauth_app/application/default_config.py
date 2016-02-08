@@ -5,8 +5,8 @@ SECRET_KEY = '\xfb\x12\xdf\xa1@idgyjr92\xd6>V\xc0msc\xbb\x8fp\x16#Z\x0b\x81\xeb\
 
 OAUTH_PROVIDERS = {
     "gitlab": {
-        "OAUTH_CLIENT_ID": 'c4aa7aa833af8e8e30872db48db741fd11d56e14e98fa2a33de61ca64aeb2d19',
-        "OAUTH_CLIENT_SECRET": '64efe16aa1429ac3a191451931ae7abffbc0ae86b8ddc4cb5dea7b93fdc1adfb',
+        "OAUTH_CLIENT_ID": '736b58fcc9a44118b202421dbbce84cac5c9eec0ba632f03b58b31dd5f5587cf',
+        "OAUTH_CLIENT_SECRET": '101327bb76ba70d656be908c4354fcda493b48d4555efd0ba11d4c7e7f1cabc7',
         "SERVICE_BASE_URL": 'https://gitlab',
         "ACCESS_SCOPE": "api",
         "IDENTITY_RESOURCE": "api/v3/user",

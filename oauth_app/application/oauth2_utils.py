@@ -16,7 +16,7 @@ from threading import Lock
 from abc import ABCMeta, abstractmethod
 
 from rauth.service import OAuth2Service
-from model import User, db
+from application.model import User, db
 
 
 class oauth2_auth_error(Exception):
@@ -27,6 +27,9 @@ class oauth2_auth_error(Exception):
 
 
 class oauth2_authorized:
+    """
+    Decorator for authorized API endpoints
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, service,
@@ -37,6 +40,9 @@ class oauth2_authorized:
 
     @abstractmethod
     def get_token(self):
+        """
+        Must return an existing access token that can be used or raise an exception
+        """
         pass
 
     def __call__(self, funct):
@@ -50,6 +56,7 @@ class oauth2_authorized:
             oauth_session = None
 
             try:
+                # Use existing access token to create authorized session
                 oauth_session = self._oauth_service.get_session(access_token)
             except:
                 raise oauth2_auth_error(self._decoder(self._oauth_service.access_token_response.content))
@@ -63,10 +70,13 @@ class oauth2_authorized:
 
 
 class oauth2_token_getter:
+    """
+    Decorator for authorization callback endpoints
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, service,
-                 grant_type='authorization_code',  # ONLY!
+                 grant_type='authorization_code',
                  code_param_name='code',
                  response_decoder=None):
 
@@ -76,21 +86,31 @@ class oauth2_token_getter:
 
     @abstractmethod
     def get_request_params():
+        """
+        Must return the current request parameters (POST/GET args.) as a dict
+        """
         pass
 
     @abstractmethod
     def get_redirect_url():
+        """
+        Must return the redirection URI of the OAuth 2.0 client
+        """
         pass
 
     @abstractmethod
-    def save_token():
+    def save_token(token):
+        """
+        Persists access token that can be re-loaded later on oauth2_authorized
+        endpoints
+        """
         pass
 
     def __call__(self, funct):
         @wraps(funct)
         def wrapped_funct(*args, **kwargs):
             redirect_uri = self.get_redirect_url()
-
+            # First check if we have
             if self._code_param_name not in self.get_request_params():
                 raise oauth2_auth_error("Authorization code required")
 
@@ -115,8 +135,15 @@ class oauth2_token_getter:
 
         return wrapped_funct
 
+# TODO: Map each config key to property of oauth2_service - code will be
+# shorter and simpler
 
 class oauth2_service(OAuth2Service):
+    """
+    Trivial extension of OAuth2Service that stores additional config.
+    information. It can also use that information to generate CSRF tokens
+    and retrieve user profile data
+    """
     class case_insensitive_dict(dict):
         def __init__(self, orig_dict):
             super().__init__({k.lower(): v for k, v in orig_dict.items()})
@@ -158,6 +185,9 @@ class oauth2_service(OAuth2Service):
 
 
 class oauth2_service_factory:
+    """
+    Simple factory class for oauth2_service objects
+    """
     mutex = Lock()
 
     def __init__(self, config={}):

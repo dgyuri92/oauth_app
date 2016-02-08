@@ -28,5 +28,5 @@ oauthapp:
     REQUESTS_CA_BUNDLE: /etc/ssl/certs/
     UWSGI_EXTRA_PARAMS: "--py-autoreload 1 --catch-exceptions" # ONLY FOR DEVELOPMENT
   volumes:
-    - ./oauth_app/app:/usr/src/app
+    - ./oauth_app/application:/usr/src/application
   restart: always
