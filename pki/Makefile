@@ -13,13 +13,10 @@ cacert.pem:
 index.txt:
 	touch index.txt
 
-serial.txt:
-	echo "$$RANDOM" > serial.txt
 
-
-servercert.pem: index.txt serial.txt
+servercert.pem: index.txt
 	$(SSL) req -config service-endpoint.cnf -newkey rsa:2048 -sha256 -nodes -out servercert.csr -outform PEM
-	$(SSL) ca -config ca.cnf -policy signing_policy -extensions signing_req -out servercert.pem -infiles servercert.csr
+	$(SSL) ca -create_serial -config ca.cnf -policy signing_policy -extensions signing_req -out servercert.pem -infiles servercert.csr
 
 chain.pem: cacert.pem servercert.pem
 	cat servercert.pem  cacert.pem > chain.pem
