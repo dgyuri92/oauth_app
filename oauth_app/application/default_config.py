@@ -19,7 +19,7 @@ OAUTH_PROVIDERS = {
 
 DEBUG = True # For development only
 
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = True
 SESSION_TYPE = "filesystem"
 # We must expire sessions
 PERMANENT_SESSION_LIFETIME = SESSION_SET_TTL = timedelta(seconds=3600)
