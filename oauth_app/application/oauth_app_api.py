@@ -99,6 +99,11 @@ def logout(oauth_service):
 
     @OAuth2AuthorizedFlask(oauth)
     def _internal(oauth, oauth_session=None):
+        # Try to ask the remote service to revoke the access token (best effort)
+        try:
+            oauth_session.post("/oauth/revoke")
+        except ValueError:
+            pass
         # Make sure to close the session
         oauth_session.close()
         # Empty session data
