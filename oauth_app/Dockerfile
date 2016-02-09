@@ -22,7 +22,7 @@ COPY /pki/certs/oauth_app.key /etc/nginx/ssl/
 
 # Install default configuration
 COPY /config/nginx.conf /etc/nginx/sites-available/oauth_app
-COPY /config/oauth_providers.cfg /usr/src/app/config.cfg
+COPY /config/oauth_providers.cfg /usr/src/application/config.cfg
 COPY /entrypoint.sh /entrypoint.sh
 RUN ln -s /etc/nginx/sites-available/oauth_app /etc/nginx/sites-enabled/oauth_app
 COPY /config/uwsgi.ini /etc/uwsgi.ini
