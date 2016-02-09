@@ -7,8 +7,8 @@ SECRET_KEY = '\xfb\x12\xdf\xa1@idgyjr92\xd6>V\xc0msc\xbb\x8fp\x16#Z\x0b\x81\xeb\
 
 OAUTH_PROVIDERS = {
     "gitlab": {
-        "OAUTH_CLIENT_ID": '736b58fcc9a44118b202421dbbce84cac5c9eec0ba632f03b58b31dd5f5587cf',
-        "OAUTH_CLIENT_SECRET": '101327bb76ba70d656be908c4354fcda493b48d4555efd0ba11d4c7e7f1cabc7',
+        "OAUTH_CLIENT_ID": '27b2c07f669fdf729d50b64742ee1a4d8dfec7603c0622f025394999b5bd8417',
+        "OAUTH_CLIENT_SECRET": '11baa15494833595f403f92094a9c0e75f1ad79af72c22efde304d6d541c76bf',
         "SERVICE_BASE_URL": 'https://gitlab',
         "ACCESS_SCOPE": "api",
         "IDENTITY_RESOURCE": "api/v3/user",
@@ -19,7 +19,7 @@ OAUTH_PROVIDERS = {
 
 DEBUG = True # For development only
 
-SESSION_COOKIE_SECURE = DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 SESSION_TYPE = "filesystem"
 # We must expire sessions
 PERMANENT_SESSION_LIFETIME = SESSION_SET_TTL = timedelta(seconds=3600)
